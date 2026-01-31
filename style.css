@@ -80,6 +80,28 @@ h1 {
   margin-bottom: 24px;
 }
 
+.ad-banner {
+  background: linear-gradient(120deg, rgba(255, 138, 91, 0.18), rgba(50, 208, 161, 0.12));
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  padding: 18px 22px;
+  margin: 16px 0 24px;
+  text-align: center;
+  box-shadow: 0 12px 30px rgba(8, 10, 18, 0.35);
+}
+
+.ad-banner p {
+  margin: 0;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: #ffe4d7;
+}
+
+.ad-banner.alt {
+  background: linear-gradient(120deg, rgba(50, 208, 161, 0.2), rgba(255, 138, 91, 0.1));
+  border-style: solid;
+}
+
 .filters {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
