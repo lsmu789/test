@@ -104,9 +104,9 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
     }
 
     errorEl.textContent = '회원가입이 완료되었습니다. 로그인 탭에서 로그인해주세요.';
-    errorEl.style.background = 'rgba(34, 197, 94, 0.1)';
-    errorEl.style.borderColor = 'rgba(34, 197, 94, 0.5)';
-    errorEl.style.color = '#86efac';
+    errorEl.style.background = '#f0fdf4';
+    errorEl.style.borderColor = '#bbf7d0';
+    errorEl.style.color = '#15803d';
     errorEl.classList.add('show');
 
     // Clear form
@@ -125,9 +125,9 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
     }
 
     errorEl.textContent = message;
-    errorEl.style.background = 'rgba(239, 68, 68, 0.1)';
-    errorEl.style.borderColor = 'rgba(239, 68, 68, 0.5)';
-    errorEl.style.color = '#fca5a5';
+    errorEl.style.background = '#fef2f2';
+    errorEl.style.borderColor = '#fecaca';
+    errorEl.style.color = '#dc2626';
     errorEl.classList.add('show');
     btnEl.disabled = false;
   }
