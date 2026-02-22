@@ -1,3 +1,36 @@
-.local/
+# Environment variables
+.dev.vars
+.env
+.env.local
+
+# Wrangler
+.wrangler/
+wrangler.toml
+
+# Dependencies
+node_modules/
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# Build artifacts
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
 firebase-debug.log
-_MONOSPACE_ENV_STARTED_=http://localhost:80/
+
+# Local storage
+.local/

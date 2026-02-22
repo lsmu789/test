@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Korean AI Chatbot</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="chat-container">
+    <!-- Sidebar -->
+    <div class="chat-sidebar">
+      <div class="chat-sidebar-header">
+        <h2>대화</h2>
+        <button class="chat-new-btn" id="new-chat-btn">+ 새로운</button>
+      </div>
+
+      <div id="conversations-list"></div>
+
+      <div class="chat-sidebar-footer">
+        <div class="user-info" id="user-info">
+          <div class="user-avatar" id="user-avatar">U</div>
+          <div id="user-email" style="flex: 1; overflow: hidden; text-overflow: ellipsis;">
+            Loading...
+          </div>
+        </div>
+        <button class="sign-out-btn" id="sign-out-btn">로그아웃</button>
+      </div>
+    </div>
+
+    <!-- Main Chat Area -->
+    <div class="chat-main">
+      <div class="chat-messages" id="messages-container"></div>
+
+      <div class="chat-input-area">
+        <div class="chat-input-wrapper">
+          <textarea
+            class="chat-input"
+            id="message-input"
+            placeholder="메시지를 입력하세요..."
+            rows="1"
+          ></textarea>
+          <button class="chat-send-btn" id="send-btn">전송</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/chat.js"></script>
+</body>
+</html>

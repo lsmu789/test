@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>로그인 - Korean AI Chatbot</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-header">
+        <h1>Korean AI Chatbot</h1>
+        <p>한국 AI 챗봇에 오신 것을 환영합니다</p>
+      </div>
+
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-tab="login">로그인</button>
+        <button class="auth-tab" data-tab="signup">회원가입</button>
+      </div>
+
+      <!-- Login Form -->
+      <form class="auth-form active" id="login-form" data-form="login">
+        <div class="error-message" id="login-error"></div>
+        <div class="form-group">
+          <label for="login-email">이메일</label>
+          <input type="email" id="login-email" placeholder="you@example.com" required>
+        </div>
+        <div class="form-group">
+          <label for="login-password">비밀번호</label>
+          <input type="password" id="login-password" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="btn btn-primary" id="login-btn">로그인</button>
+      </form>
+
+      <!-- Signup Form -->
+      <form class="auth-form" id="signup-form" data-form="signup">
+        <div class="error-message" id="signup-error"></div>
+        <div class="form-group">
+          <label for="signup-email">이메일</label>
+          <input type="email" id="signup-email" placeholder="you@example.com" required>
+        </div>
+        <div class="form-group">
+          <label for="signup-password">비밀번호</label>
+          <input type="password" id="signup-password" placeholder="••••••••" required>
+        </div>
+        <div class="form-group">
+          <label for="signup-confirm">비밀번호 확인</label>
+          <input type="password" id="signup-confirm" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="btn btn-primary" id="signup-btn">회원가입</button>
+      </form>
+    </div>
+  </div>
+
+  <script type="module" src="/login.js"></script>
+</body>
+</html>

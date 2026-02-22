@@ -1,0 +1,11 @@
+{
+  "name": "korean-ai-chatbot",
+  "version": "1.0.0",
+  "description": "Korean AI Chatbot with Supabase and Cloudflare Pages Functions",
+  "scripts": {
+    "dev": "wrangler pages dev . --port 8788"
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}
