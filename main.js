@@ -43,4 +43,4 @@ export async function getSession() {
   return session;
 }
 
-export { getSupabase as supabase };
+export { getSupabase };
