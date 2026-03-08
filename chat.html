@@ -1,46 +1,504 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Korean AI Chatbot</title>
+  <title>조선왕조실록 동화 생성</title>
   <link rel="stylesheet" href="/style.css">
+  <style>
+    /* Fairytale-specific styles */
+    .fairytale-container {
+      display: flex;
+      height: 100vh;
+      background: #f8f9fa;
+    }
+
+    .fairytale-sidebar {
+      width: 250px;
+      background: white;
+      border-right: 1px solid #e0e0e0;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+    }
+
+    .fairytale-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Mode: Selection (주제/자유도/양 선택) */
+    .fairytale-selection {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 40px;
+      gap: 30px;
+    }
+
+    .selection-box {
+      width: 100%;
+      max-width: 500px;
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .selection-group {
+      margin-bottom: 25px;
+    }
+
+    .selection-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: #333;
+    }
+
+    .theme-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .theme-btn {
+      padding: 10px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      background: white;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s;
+    }
+
+    .theme-btn:hover {
+      border-color: #4CAF50;
+      background: #f0f8f0;
+    }
+
+    .theme-btn.active {
+      border-color: #4CAF50;
+      background: #4CAF50;
+      color: white;
+    }
+
+    .slider-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .slider-container input[type="range"] {
+      flex: 1;
+      height: 6px;
+      border-radius: 3px;
+      background: #ddd;
+      outline: none;
+      -webkit-appearance: none;
+    }
+
+    .slider-container input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #4CAF50;
+      cursor: pointer;
+    }
+
+    .slider-container input[type="range"]::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #4CAF50;
+      cursor: pointer;
+      border: none;
+    }
+
+    .slider-label {
+      font-size: 12px;
+      color: #666;
+      min-width: 30px;
+    }
+
+    .start-btn {
+      width: 100%;
+      padding: 12px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .start-btn:hover {
+      background: #45a049;
+    }
+
+    /* Mode: Generation (5단계 진행) */
+    .fairytale-generation {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 30px;
+      gap: 20px;
+      overflow-y: auto;
+    }
+
+    .progress-container {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .progress-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .progress-step {
+      flex: 1;
+      height: 8px;
+      background: #e0e0e0;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-step.active {
+      background: #4CAF50;
+    }
+
+    .progress-step.completed {
+      background: #66BB6A;
+    }
+
+    .progress-text {
+      font-size: 14px;
+      color: #666;
+      text-align: center;
+    }
+
+    .content-display {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      flex: 1;
+      overflow-y: auto;
+      line-height: 1.6;
+      color: #333;
+    }
+
+    .content-display.loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #999;
+      font-style: italic;
+    }
+
+    .generation-controls {
+      display: flex;
+      gap: 10px;
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .btn-primary {
+      padding: 10px 20px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.3s;
+    }
+
+    .btn-primary:hover {
+      background: #45a049;
+    }
+
+    .btn-secondary {
+      padding: 10px 20px;
+      background: #f0f0f0;
+      color: #333;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s;
+    }
+
+    .btn-secondary:hover {
+      background: #e0e0e0;
+    }
+
+    .token-display {
+      font-size: 12px;
+      color: #999;
+      text-align: right;
+      padding-top: 10px;
+      border-top: 1px solid #f0f0f0;
+    }
+
+    /* Mode: Completion (완료 후) */
+    .fairytale-completion {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 30px;
+      gap: 20px;
+      overflow-y: auto;
+    }
+
+    .completion-header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .completion-header h2 {
+      color: #4CAF50;
+      margin-bottom: 10px;
+    }
+
+    .completion-content {
+      background: white;
+      padding: 25px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      flex: 1;
+      overflow-y: auto;
+      line-height: 1.8;
+      color: #333;
+    }
+
+    .completion-actions {
+      display: flex;
+      gap: 10px;
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .completion-actions button {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+
+    .btn-pdf {
+      background: #FF6B6B;
+      color: white;
+    }
+
+    .btn-pdf:hover {
+      background: #ee5a52;
+    }
+
+    .btn-new {
+      background: #4CAF50;
+      color: white;
+    }
+
+    .btn-new:hover {
+      background: #45a049;
+    }
+
+    .btn-mypage {
+      background: #2196F3;
+      color: white;
+    }
+
+    .btn-mypage:hover {
+      background: #0b7dda;
+    }
+
+    /* Sidebar */
+    .fairytale-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .fairytale-header h1 {
+      font-size: 18px;
+      margin: 0;
+      color: #333;
+    }
+
+    .fairytale-footer {
+      margin-top: auto;
+      padding-top: 20px;
+      border-top: 1px solid #e0e0e0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .user-info-sidebar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      background: #f5f5f5;
+      border-radius: 8px;
+    }
+
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #4CAF50;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+    }
+
+    .user-email {
+      font-size: 13px;
+      color: #666;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .sign-out-btn {
+      padding: 10px;
+      background: #f44336;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: background 0.3s;
+    }
+
+    .sign-out-btn:hover {
+      background: #da190b;
+    }
+  </style>
 </head>
 <body>
-  <div class="chat-container">
+  <div class="fairytale-container">
     <!-- Sidebar -->
-    <div class="chat-sidebar">
-      <div class="chat-sidebar-header">
-        <h2>대화</h2>
-        <button class="chat-new-btn" id="new-chat-btn">+ 새로운</button>
+    <div class="fairytale-sidebar">
+      <div class="fairytale-header">
+        <h1>📖 동화 생성</h1>
       </div>
 
-      <div id="conversations-list"></div>
+      <div style="flex: 1;"></div>
 
-      <div class="chat-sidebar-footer">
-        <div class="user-info" id="user-info">
+      <div class="fairytale-footer">
+        <div class="user-info-sidebar">
           <div class="user-avatar" id="user-avatar">U</div>
-          <div id="user-email" style="flex: 1; overflow: hidden; text-overflow: ellipsis;">
-            Loading...
-          </div>
+          <div class="user-email" id="user-email">Loading...</div>
         </div>
         <button class="sign-out-btn" id="sign-out-btn">로그아웃</button>
       </div>
     </div>
 
-    <!-- Main Chat Area -->
-    <div class="chat-main">
-      <div class="chat-messages" id="messages-container"></div>
+    <!-- Main Area -->
+    <div class="fairytale-main">
+      <!-- Mode 1: Selection -->
+      <div id="selection-mode" class="fairytale-selection" style="display: none;">
+        <div class="selection-box">
+          <div class="selection-group">
+            <label>주제 선택</label>
+            <div class="theme-options">
+              <button class="theme-btn" data-theme="클래식">📚 클래식</button>
+              <button class="theme-btn" data-theme="호러">😨 호러</button>
+              <button class="theme-btn" data-theme="액션">⚔️ 액션</button>
+              <button class="theme-btn" data-theme="로맨스">💕 로맨스</button>
+              <button class="theme-btn" data-theme="사실기반">📰 사실기반</button>
+            </div>
+          </div>
 
-      <div class="chat-input-area">
-        <div class="chat-input-wrapper">
-          <textarea
-            class="chat-input"
-            id="message-input"
-            placeholder="메시지를 입력하세요..."
-            rows="1"
-          ></textarea>
-          <button class="chat-send-btn" id="send-btn">전송</button>
+          <div class="selection-group">
+            <label>자유도 (꽉찬 ←→ 자유로운)</label>
+            <div class="slider-container">
+              <span class="slider-label">꽉</span>
+              <input type="range" id="freedom-slider" min="0" max="1" step="0.1" value="0.5">
+              <span class="slider-label" id="freedom-value">0.5</span>
+            </div>
+          </div>
+
+          <div class="selection-group">
+            <label>내용 양 (적게 ←→ 많이)</label>
+            <div class="slider-container">
+              <span class="slider-label">적게</span>
+              <input type="range" id="volume-slider" min="0" max="1" step="0.1" value="0.5">
+              <span class="slider-label" id="volume-value">0.5</span>
+            </div>
+          </div>
+
+          <button class="start-btn" id="start-btn" style="display: none;">시작</button>
+        </div>
+      </div>
+
+      <!-- Mode 2: Generation -->
+      <div id="generation-mode" class="fairytale-generation" style="display: none;">
+        <div class="progress-container">
+          <div class="progress-bar" id="progress-bar">
+            <div class="progress-step" data-step="1"></div>
+            <div class="progress-step" data-step="2"></div>
+            <div class="progress-step" data-step="3"></div>
+            <div class="progress-step" data-step="4"></div>
+            <div class="progress-step" data-step="5"></div>
+          </div>
+          <div class="progress-text" id="progress-text">Step 1/5 - 콘셉트 생성 중...</div>
+        </div>
+
+        <div class="content-display loading" id="content-display">
+          생성 중입니다...
+        </div>
+
+        <div class="generation-controls">
+          <button class="btn-secondary" id="finish-btn" style="display: none;">마무리하기</button>
+          <button class="btn-primary" id="next-btn" style="display: none;">다음 (Step 2)</button>
+          <div style="flex: 1;"></div>
+        </div>
+
+        <div class="token-display" id="token-display">토큰: 0개 | 비용: $0.00 | ₩0</div>
+      </div>
+
+      <!-- Mode 3: Completion -->
+      <div id="completion-mode" class="fairytale-completion" style="display: none;">
+        <div class="completion-header">
+          <h2>✅ 동화 생성 완료!</h2>
+          <p id="completion-subtitle">조선왕조실록 기반 동화가 완성되었습니다</p>
+        </div>
+
+        <div class="completion-content" id="completion-content"></div>
+
+        <div class="completion-actions">
+          <button class="btn-pdf" id="pdf-btn">📥 PDF 생성 & 다운로드</button>
+          <button class="btn-new" id="new-btn">🔄 새 동화 생성</button>
+          <button class="btn-mypage" id="mypage-btn">👤 마이페이지</button>
         </div>
       </div>
     </div>

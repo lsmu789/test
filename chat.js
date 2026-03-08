@@ -8,163 +8,177 @@ if (!session) {
 
 const sb = await getSupabase();
 
-// DOM elements
-const messagesContainer = document.getElementById('messages-container');
-const messageInput = document.getElementById('message-input');
-const sendBtn = document.getElementById('send-btn');
-const userInfo = document.getElementById('user-info');
+// ========================================
+// DOM Elements
+// ========================================
+
+// Mode containers
+const selectionMode = document.getElementById('selection-mode');
+const generationMode = document.getElementById('generation-mode');
+const completionMode = document.getElementById('completion-mode');
+
+// Selection mode elements
+const themeButtons = document.querySelectorAll('.theme-btn');
+const freedomSlider = document.getElementById('freedom-slider');
+const freedomValue = document.getElementById('freedom-value');
+const volumeSlider = document.getElementById('volume-slider');
+const volumeValue = document.getElementById('volume-value');
+const startBtn = document.getElementById('start-btn');
+
+// Generation mode elements
+const progressBar = document.getElementById('progress-bar');
+const progressText = document.getElementById('progress-text');
+const contentDisplay = document.getElementById('content-display');
+const finishBtn = document.getElementById('finish-btn');
+const nextBtn = document.getElementById('next-btn');
+const tokenDisplay = document.getElementById('token-display');
+
+// Completion mode elements
+const completionContent = document.getElementById('completion-content');
+const pdfBtn = document.getElementById('pdf-btn');
+const newBtn = document.getElementById('new-btn');
+const mypageBtn = document.getElementById('mypage-btn');
+
+// Sidebar elements
 const userEmail = document.getElementById('user-email');
 const userAvatar = document.getElementById('user-avatar');
 const signOutBtn = document.getElementById('sign-out-btn');
-const newChatBtn = document.getElementById('new-chat-btn');
-const conversationsList = document.getElementById('conversations-list');
 
+// ========================================
 // State
-let conversations = JSON.parse(localStorage.getItem('conversations') || '[]');
-let currentConversationId = localStorage.getItem('currentConversationId') || null;
-let currentMessages = [];
-let isLoading = false;
+// ========================================
 
-// Initialize
+let state = {
+  theme: null,
+  freedom: 0.5,
+  volume: 0.5,
+  currentStep: 0,
+  maxStep: 5,
+  fairytaleId: null,
+  contents: {}, // { 1: content, 2: content, ... }
+  totalTokens: 0,
+  totalCost: { usd: 0, krw: 0 },
+  isGenerating: false,
+};
+
+// ========================================
+// Initialization
+// ========================================
+
 function init() {
   // Set user info
   userEmail.textContent = session.user.email;
   userAvatar.textContent = session.user.email.charAt(0).toUpperCase();
 
-  // Load conversations from localStorage
-  renderConversations();
+  // Event listeners
+  signOutBtn.addEventListener('click', signOut);
 
-  // Load current conversation or start new one
-  if (currentConversationId) {
-    const conv = conversations.find(c => c.id === currentConversationId);
-    if (conv) {
-      currentMessages = conv.messages || [];
-      renderMessages();
-    } else {
-      newConversation();
+  // Selection mode
+  themeButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      themeButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.theme = btn.dataset.theme;
+      updateStartBtn();
+    });
+  });
+
+  freedomSlider.addEventListener('input', (e) => {
+    state.freedom = parseFloat(e.target.value);
+    freedomValue.textContent = state.freedom.toFixed(1);
+  });
+
+  volumeSlider.addEventListener('input', (e) => {
+    state.volume = parseFloat(e.target.value);
+    volumeValue.textContent = state.volume.toFixed(1);
+  });
+
+  startBtn.addEventListener('click', startGeneration);
+
+  // Generation mode
+  finishBtn.addEventListener('click', finishFairytale);
+  nextBtn.addEventListener('click', generateNextStep);
+
+  // Completion mode
+  pdfBtn.addEventListener('click', generatePdf);
+  newBtn.addEventListener('click', resetAndShowSelection);
+  mypageBtn.addEventListener('click', goToMypage);
+
+  // Show selection mode
+  showSelectionMode();
+}
+
+// ========================================
+// Mode switching
+// ========================================
+
+function showSelectionMode() {
+  selectionMode.style.display = 'flex';
+  generationMode.style.display = 'none';
+  completionMode.style.display = 'none';
+  resetState();
+}
+
+function showGenerationMode() {
+  selectionMode.style.display = 'none';
+  generationMode.style.display = 'flex';
+  completionMode.style.display = 'none';
+}
+
+function showCompletionMode() {
+  selectionMode.style.display = 'none';
+  generationMode.style.display = 'none';
+  completionMode.style.display = 'flex';
+
+  // Combine all contents
+  let allContent = '';
+  for (let i = 1; i <= state.maxStep; i++) {
+    if (state.contents[i]) {
+      allContent += state.contents[i] + '\n\n';
     }
-  } else {
-    newConversation();
   }
 
-  // Event listeners
-  sendBtn.addEventListener('click', sendMessage);
-  messageInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  });
-
-  // Auto-resize textarea
-  messageInput.addEventListener('input', () => {
-    messageInput.style.height = 'auto';
-    messageInput.style.height = Math.min(messageInput.scrollHeight, 100) + 'px';
-  });
-
-  signOutBtn.addEventListener('click', signOut);
-  newChatBtn.addEventListener('click', newConversation);
+  completionContent.innerHTML = allContent.replace(/\n/g, '<br>');
 }
 
-function newConversation() {
-  const id = 'conv_' + Date.now();
-  currentConversationId = id;
-  currentMessages = [];
+// ========================================
+// Selection mode
+// ========================================
 
-  conversations.push({
-    id,
-    title: '새로운 대화',
-    messages: [],
-    createdAt: new Date().toISOString(),
-  });
-
-  saveConversations();
-  renderConversations();
-  renderMessages();
-  messageInput.focus();
+function updateStartBtn() {
+  if (state.theme) {
+    startBtn.style.display = 'block';
+  } else {
+    startBtn.style.display = 'none';
+  }
 }
 
-function renderConversations() {
-  conversationsList.innerHTML = '';
+// ========================================
+// Generation mode
+// ========================================
 
-  conversations.forEach((conv) => {
-    const item = document.createElement('div');
-    item.className = 'conversation-item';
-    if (conv.id === currentConversationId) {
-      item.classList.add('active');
-    }
+async function startGeneration() {
+  state.currentStep = 1;
+  state.fairytaleId = 'fairytale_' + Date.now(); // Temporary ID
+  state.contents = {};
+  state.totalTokens = 0;
+  state.totalCost = { usd: 0, krw: 0 };
 
-    // Get first message as preview
-    const firstMessage = conv.messages?.[0];
-    const preview = firstMessage
-      ? (firstMessage.content || '').substring(0, 30) + '...'
-      : '새로운 대화';
-
-    item.textContent = preview;
-    item.addEventListener('click', () => {
-      currentConversationId = conv.id;
-      currentMessages = conv.messages || [];
-      renderConversations();
-      renderMessages();
-    });
-
-    conversationsList.appendChild(item);
-  });
+  showGenerationMode();
+  await generateStep();
 }
 
-function renderMessages() {
-  messagesContainer.innerHTML = '';
-
-  if (currentMessages.length === 0) {
-    messagesContainer.innerHTML = `
-      <div class="empty-state">
-        <h2>무엇을 도와드릴까요?</h2>
-        <p>안녕하세요! 한국 AI 챗봇입니다. 궁금한 점을 물어봐주세요.</p>
-      </div>
-    `;
+async function generateStep() {
+  if (state.currentStep > state.maxStep) {
+    showCompletionMode();
     return;
   }
 
-  currentMessages.forEach((msg) => {
-    const msgEl = document.createElement('div');
-    msgEl.className = `message ${msg.role}`;
+  const stepNames = ['', '콘셉트', '플롯', '캐릭터', '본문', '마무리'];
 
-    const avatar = document.createElement('div');
-    avatar.className = 'message-avatar';
-    avatar.textContent = msg.role === 'user' ? 'U' : 'AI';
-
-    const content = document.createElement('div');
-    content.className = 'message-content';
-    content.textContent = msg.content;
-
-    if (msg.role === 'user') {
-      msgEl.appendChild(content);
-      msgEl.appendChild(avatar);
-    } else {
-      msgEl.appendChild(avatar);
-      msgEl.appendChild(content);
-    }
-
-    messagesContainer.appendChild(msgEl);
-  });
-
-  // Scroll to bottom
-  messagesContainer.scrollTop = messagesContainer.scrollHeight;
-}
-
-async function sendMessage() {
-  const text = messageInput.value.trim();
-  if (!text || isLoading) return;
-
-  isLoading = true;
-  sendBtn.disabled = true;
-  messageInput.disabled = true;
-
-  // Add user message
-  currentMessages.push({ role: 'user', content: text });
-  renderMessages();
-  messageInput.value = '';
-  messageInput.style.height = 'auto';
+  state.isGenerating = true;
+  updateProgressBar();
+  updateGenerationUI();
 
   try {
     // Get access token
@@ -176,15 +190,18 @@ async function sendMessage() {
     const accessToken = currentSession.access_token;
 
     // Call API
-    const response = await fetch('/api/chat', {
+    const response = await fetch('/api/generate-fairytale', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${accessToken}`,
       },
       body: JSON.stringify({
-        message: text,
-        conversationHistory: currentMessages.slice(0, -1), // Exclude the user message we just added
+        theme: state.theme,
+        freedom: state.freedom,
+        volume: state.volume,
+        step: state.currentStep,
+        fairytaleId: state.fairytaleId,
       }),
     });
 
@@ -195,44 +212,125 @@ async function sendMessage() {
 
     const data = await response.json();
 
-    // Update conversation title if first message
-    const conv = conversations.find(c => c.id === currentConversationId);
-    if (conv && (!conv.messages || conv.messages.length === 0)) {
-      // Use first 30 chars of user message as title
-      conv.title = text.substring(0, 30) + (text.length > 30 ? '...' : '');
-    }
+    // Store content
+    state.contents[state.currentStep] = data.content;
 
-    // Add assistant message
-    currentMessages.push({ role: 'assistant', content: data.reply });
-    saveConversations();
-    renderConversations();
-    renderMessages();
+    // Update tokens and cost
+    state.totalTokens += data.tokens.total;
+    state.totalCost.usd += parseFloat(data.cost.usd);
+    state.totalCost.krw += parseFloat(data.cost.krw);
+
+    // Display content
+    contentDisplay.classList.remove('loading');
+    contentDisplay.innerHTML = data.content.replace(/\n/g, '<br>');
+    updateTokenDisplay();
+
+    // Show buttons
+    finishBtn.style.display = 'block';
+    if (state.currentStep < state.maxStep) {
+      const nextStepName = stepNames[state.currentStep + 1];
+      nextBtn.textContent = `다음 (Step ${state.currentStep + 1})`;
+      nextBtn.style.display = 'block';
+    } else {
+      nextBtn.style.display = 'none';
+    }
   } catch (error) {
     console.error('Error:', error);
-    // Add error message
-    currentMessages.push({
-      role: 'assistant',
-      content: `오류가 발생했습니다: ${error.message}`,
-    });
-    renderMessages();
+    contentDisplay.classList.remove('loading');
+    contentDisplay.innerHTML = `오류가 발생했습니다: ${error.message}`;
+    contentDisplay.style.color = '#d32f2f';
   } finally {
-    isLoading = false;
-    sendBtn.disabled = false;
-    messageInput.disabled = false;
-    messageInput.focus();
+    state.isGenerating = false;
   }
 }
 
-function saveConversations() {
-  // Update current conversation messages
-  const conv = conversations.find(c => c.id === currentConversationId);
-  if (conv) {
-    conv.messages = currentMessages;
-  }
-
-  localStorage.setItem('conversations', JSON.stringify(conversations));
-  localStorage.setItem('currentConversationId', currentConversationId);
+function generateNextStep() {
+  state.currentStep++;
+  contentDisplay.classList.add('loading');
+  contentDisplay.textContent = '생성 중입니다...';
+  finishBtn.style.display = 'none';
+  nextBtn.style.display = 'none';
+  generateStep();
 }
 
+function finishFairytale() {
+  showCompletionMode();
+}
+
+function updateProgressBar() {
+  const steps = progressBar.querySelectorAll('.progress-step');
+  steps.forEach((step, index) => {
+    const stepNum = index + 1;
+    step.classList.remove('active', 'completed');
+    if (stepNum < state.currentStep) {
+      step.classList.add('completed');
+    } else if (stepNum === state.currentStep) {
+      step.classList.add('active');
+    }
+  });
+
+  const stepNames = ['', '콘셉트', '플롯', '캐릭터', '본문', '마무리'];
+  progressText.textContent = `Step ${state.currentStep}/${state.maxStep} - ${stepNames[state.currentStep]} 생성 중...`;
+}
+
+function updateGenerationUI() {
+  // Could add animations or other UI updates here
+}
+
+function updateTokenDisplay() {
+  const tokens = state.totalTokens;
+  const costUsd = state.totalCost.usd.toFixed(6);
+  const costKrw = state.totalCost.krw.toFixed(0);
+  tokenDisplay.textContent = `토큰: ${tokens}개 | 비용: $${costUsd} | ₩${costKrw}`;
+}
+
+// ========================================
+// Completion mode
+// ========================================
+
+async function generatePdf() {
+  alert('PDF 생성 기능은 준비 중입니다.');
+  // TODO: Implement PDF generation
+}
+
+function resetAndShowSelection() {
+  showSelectionMode();
+}
+
+function goToMypage() {
+  alert('마이페이지 기능은 준비 중입니다.');
+  // TODO: Redirect to mypage or show mypage UI
+}
+
+// ========================================
+// Utility functions
+// ========================================
+
+function resetState() {
+  state = {
+    theme: null,
+    freedom: 0.5,
+    volume: 0.5,
+    currentStep: 0,
+    maxStep: 5,
+    fairytaleId: null,
+    contents: {},
+    totalTokens: 0,
+    totalCost: { usd: 0, krw: 0 },
+    isGenerating: false,
+  };
+
+  // Reset UI
+  themeButtons.forEach(btn => btn.classList.remove('active'));
+  freedomSlider.value = 0.5;
+  freedomValue.textContent = '0.5';
+  volumeSlider.value = 0.5;
+  volumeValue.textContent = '0.5';
+  startBtn.style.display = 'none';
+}
+
+// ========================================
 // Initialize
+// ========================================
+
 init();
