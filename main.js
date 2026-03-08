@@ -1,6 +1,6 @@
 // Supabase configuration
-const SUPABASE_URL = 'https://pjrteskkzvxusabzzutj.supabase.co'; // Replace with your Supabase URL
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqcnRlc2trenZ4dXNhYnp6dXRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3NjQzMzEsImV4cCI6MjA4NzM0MDMzMX0.o4uQjFSG3Eota8ndR15MF14MRGAOTtv_pZeC0ZmuXt4'; // Replace with your Supabase anon key
+const SUPABASE_URL = 'https://vygjcktxdvqdvftjzvur.supabase.co'; // Replace with your Supabase URL
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5Z2pja3R4ZHZxZHZmdGp6dnVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3NjY3NzAsImV4cCI6MjA4NzM0Mjc3MH0.XGNRM3I5JB9W2BpkrU0Z9C9e-UUSml2WTSTWCSrVfYo'; // Replace with your Supabase anon key
 
 // Initialize Supabase client
 let supabase;

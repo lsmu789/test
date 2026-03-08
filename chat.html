@@ -486,7 +486,23 @@
         <div class="token-display" id="token-display">토큰: 0개 | 비용: $0.00 | ₩0</div>
       </div>
 
-      <!-- Mode 3: Completion -->
+      <!-- Mode 3: Mypage -->
+      <div id="mypage-mode" class="fairytale-completion" style="display: none;">
+        <div class="completion-header">
+          <h2>📚 내가 만든 동화</h2>
+          <p id="mypage-subtitle">생성한 동화 목록</p>
+        </div>
+
+        <div class="completion-content" id="mypage-content" style="padding: 20px; overflow-y: auto;">
+          <div style="text-align: center; color: #999;">동화를 불러오는 중...</div>
+        </div>
+
+        <div class="completion-actions">
+          <button class="btn-new" id="mypage-new-btn">🔄 새 동화 생성</button>
+        </div>
+      </div>
+
+      <!-- Mode 4: Completion -->
       <div id="completion-mode" class="fairytale-completion" style="display: none;">
         <div class="completion-header">
           <h2>✅ 동화 생성 완료!</h2>
@@ -503,6 +519,9 @@
       </div>
     </div>
   </div>
+
+  <!-- HTML2PDF Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
   <script type="module" src="/chat.js"></script>
 </body>

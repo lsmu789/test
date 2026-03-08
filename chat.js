@@ -16,6 +16,7 @@ const sb = await getSupabase();
 const selectionMode = document.getElementById('selection-mode');
 const generationMode = document.getElementById('generation-mode');
 const completionMode = document.getElementById('completion-mode');
+const mypageMode = document.getElementById('mypage-mode');
 
 // Selection mode elements
 const themeButtons = document.querySelectorAll('.theme-btn');
@@ -38,6 +39,10 @@ const completionContent = document.getElementById('completion-content');
 const pdfBtn = document.getElementById('pdf-btn');
 const newBtn = document.getElementById('new-btn');
 const mypageBtn = document.getElementById('mypage-btn');
+
+// Mypage mode elements
+const mypageContent = document.getElementById('mypage-content');
+const mypageNewBtn = document.getElementById('mypage-new-btn');
 
 // Sidebar elements
 const userEmail = document.getElementById('user-email');
@@ -104,6 +109,9 @@ function init() {
   newBtn.addEventListener('click', resetAndShowSelection);
   mypageBtn.addEventListener('click', goToMypage);
 
+  // Mypage mode
+  mypageNewBtn.addEventListener('click', resetAndShowSelection);
+
   // Show selection mode
   showSelectionMode();
 }
@@ -116,6 +124,7 @@ function showSelectionMode() {
   selectionMode.style.display = 'flex';
   generationMode.style.display = 'none';
   completionMode.style.display = 'none';
+  mypageMode.style.display = 'none';
   resetState();
 }
 
@@ -123,12 +132,14 @@ function showGenerationMode() {
   selectionMode.style.display = 'none';
   generationMode.style.display = 'flex';
   completionMode.style.display = 'none';
+  mypageMode.style.display = 'none';
 }
 
 function showCompletionMode() {
   selectionMode.style.display = 'none';
   generationMode.style.display = 'none';
   completionMode.style.display = 'flex';
+  mypageMode.style.display = 'none';
 
   // Combine all contents
   let allContent = '';
@@ -139,6 +150,15 @@ function showCompletionMode() {
   }
 
   completionContent.innerHTML = allContent.replace(/\n/g, '<br>');
+}
+
+function showMypageMode() {
+  selectionMode.style.display = 'none';
+  generationMode.style.display = 'none';
+  completionMode.style.display = 'none';
+  mypageMode.style.display = 'flex';
+
+  loadFairytales();
 }
 
 // ========================================
@@ -289,17 +309,231 @@ function updateTokenDisplay() {
 // ========================================
 
 async function generatePdf() {
-  alert('PDF 생성 기능은 준비 중입니다.');
-  // TODO: Implement PDF generation
+  try {
+    pdfBtn.disabled = true;
+    pdfBtn.textContent = '생성 중...';
+
+    // Combine all contents
+    let allContent = '';
+    for (let i = 1; i <= state.maxStep; i++) {
+      if (state.contents[i]) {
+        allContent += state.contents[i] + '\n\n';
+      }
+    }
+
+    // Create HTML for PDF
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          body { font-family: 'Arial', sans-serif; line-height: 1.8; color: #333; }
+          .header { text-align: center; margin-bottom: 40px; border-bottom: 2px solid #4CAF50; padding-bottom: 20px; }
+          .header h1 { margin: 0; color: #4CAF50; font-size: 24px; }
+          .header .meta { font-size: 12px; color: #999; margin-top: 10px; }
+          .content { white-space: pre-wrap; word-wrap: break-word; }
+          .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #e0e0e0; font-size: 12px; color: #999; text-align: center; }
+          page { page-break-after: always; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>${state.theme} 동화</h1>
+          <div class="meta">
+            <p>주제: ${state.theme} | 자유도: ${state.freedom} | 내용양: ${state.volume}</p>
+            <p>생성일: ${new Date().toLocaleString('ko-KR')} | 총 토큰: ${state.totalTokens}개</p>
+          </div>
+        </div>
+        <div class="content">${allContent.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+        <div class="footer">
+          <p>조선왕조실록 기반 AI 동화 | 조직 모름 · 기술 모름</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    // Generate PDF using html2pdf
+    const element = document.createElement('div');
+    element.innerHTML = html;
+
+    const opt = {
+      margin: 10,
+      filename: `동화_${state.theme}_${new Date().getTime()}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+    };
+
+    await html2pdf().set(opt).from(html).save();
+
+    // Try to save to Supabase (optional)
+    saveFairytaleToSupabase();
+
+    pdfBtn.textContent = '📥 PDF 생성 & 다운로드';
+  } catch (error) {
+    console.error('PDF generation error:', error);
+    alert('PDF 생성 중 오류가 발생했습니다: ' + error.message);
+    pdfBtn.textContent = '📥 PDF 생성 & 다운로드';
+  } finally {
+    pdfBtn.disabled = false;
+  }
+}
+
+async function saveFairytaleToSupabase() {
+  try {
+    const { data: { session: currentSession } } = await sb.auth.getSession();
+    if (!currentSession) return;
+
+    const accessToken = currentSession.access_token;
+
+    // Create fairytale record
+    const response = await fetch('https://vygjcktxdvqdvftjzvur.supabase.co/rest/v1/fairytales', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5Z2pja3R4ZHZxZHZmdGp6dnVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3NjY3NzAsImV4cCI6MjA4NzM0Mjc3MH0.XGNRM3I5JB9W2BpkrU0Z9C9e-UUSml2WTSTWCSrVfYo',
+      },
+      body: JSON.stringify({
+        title: `${state.theme} 동화`,
+        theme: state.theme,
+        freedom: state.freedom,
+        volume: state.volume,
+        status: 'completed',
+        total_tokens: state.totalTokens,
+        total_cost_usd: state.totalCost.usd,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error('Failed to save fairytale');
+    }
+  } catch (error) {
+    console.error('Error saving fairytale:', error);
+  }
 }
 
 function resetAndShowSelection() {
   showSelectionMode();
 }
 
-function goToMypage() {
-  alert('마이페이지 기능은 준비 중입니다.');
-  // TODO: Redirect to mypage or show mypage UI
+async function goToMypage() {
+  showMypageMode();
+}
+
+// ========================================
+// Mypage mode
+// ========================================
+
+async function loadFairytales() {
+  try {
+    mypageContent.innerHTML = '<div style="text-align: center; color: #999;">동화를 불러오는 중...</div>';
+
+    const { data: { session: currentSession } } = await sb.auth.getSession();
+    if (!currentSession) {
+      mypageContent.innerHTML = '<div style="color: #d32f2f;">세션 만료. 다시 로그인해주세요.</div>';
+      return;
+    }
+
+    const accessToken = currentSession.access_token;
+
+    // Fetch fairytales from Supabase
+    const response = await fetch(
+      'https://vygjcktxdvqdvftjzvur.supabase.co/rest/v1/fairytales?order=created_at.desc',
+      {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5Z2pja3R4ZHZxZHZmdGp6dnVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3NjY3NzAsImV4cCI6MjA4NzM0Mjc3MH0.XGNRM3I5JB9W2BpkrU0Z9C9e-UUSml2WTSTWCSrVfYo',
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch fairytales');
+    }
+
+    const fairytales = await response.json();
+
+    if (fairytales.length === 0) {
+      mypageContent.innerHTML = '<div style="text-align: center; color: #999; padding: 40px;">아직 생성한 동화가 없습니다.</div>';
+      return;
+    }
+
+    // Render fairytales
+    mypageContent.innerHTML = fairytales.map(ft => `
+      <div style="background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+        <div style="display: flex; justify-content: space-between; align-items: start;">
+          <div style="flex: 1;">
+            <h3 style="margin: 0 0 10px 0; color: #333;">${ft.title || '제목 없음'}</h3>
+            <div style="font-size: 12px; color: #666; margin-bottom: 8px;">
+              <span>주제: ${ft.theme}</span> |
+              <span>자유도: ${ft.freedom}</span> |
+              <span>양: ${ft.volume}</span>
+            </div>
+            <div style="font-size: 12px; color: #999;">
+              생성일: ${new Date(ft.created_at).toLocaleString('ko-KR')}
+              ${ft.total_tokens ? ` | 토큰: ${ft.total_tokens}개` : ''}
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button onclick="viewFairytale('${ft.id}')" style="padding: 6px 12px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">보기</button>
+            <button onclick="deleteFairytale('${ft.id}')" style="padding: 6px 12px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">삭제</button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+
+    // Make functions global for onclick handlers
+    window.viewFairytale = viewFairytale;
+    window.deleteFairytale = deleteFairytale;
+
+  } catch (error) {
+    console.error('Error loading fairytales:', error);
+    mypageContent.innerHTML = `<div style="color: #d32f2f;">오류: ${error.message}</div>`;
+  }
+}
+
+async function viewFairytale(fairytaleId) {
+  alert('동화 상세보기는 준비 중입니다.');
+  // TODO: Implement fairytale details view
+}
+
+async function deleteFairytale(fairytaleId) {
+  if (!confirm('이 동화를 삭제하시겠습니까?')) {
+    return;
+  }
+
+  try {
+    const { data: { session: currentSession } } = await sb.auth.getSession();
+    if (!currentSession) {
+      alert('세션 만료. 다시 로그인해주세요.');
+      return;
+    }
+
+    const accessToken = currentSession.access_token;
+
+    const response = await fetch(
+      `https://vygjcktxdvqdvftjzvur.supabase.co/rest/v1/fairytales?id=eq.${fairytaleId}`,
+      {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5Z2pja3R4ZHZxZHZmdGp6dnVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3NjY3NzAsImV4cCI6MjA4NzM0Mjc3MH0.XGNRM3I5JB9W2BpkrU0Z9C9e-UUSml2WTSTWCSrVfYo',
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error('Failed to delete fairytale');
+    }
+
+    alert('동화가 삭제되었습니다.');
+    loadFairytales();
+  } catch (error) {
+    console.error('Error deleting fairytale:', error);
+    alert('삭제 중 오류가 발생했습니다: ' + error.message);
+  }
 }
 
 // ========================================

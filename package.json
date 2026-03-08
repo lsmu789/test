@@ -5,6 +5,9 @@
   "scripts": {
     "dev": "wrangler pages dev . --port 8788"
   },
+  "dependencies": {
+    "html2pdf.js": "^0.10.1"
+  },
   "devDependencies": {
     "wrangler": "^3.0.0"
   }
